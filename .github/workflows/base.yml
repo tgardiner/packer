@@ -1,0 +1,80 @@
+name: "Packer base"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - base/**
+      - .github/workflows/base.yml
+  pull_request:
+    branches:
+      - master
+    paths:
+      - base/**
+      - .github/workflows/base.yml
+  schedule:
+    - cron:  '0 0 * * 1'
+
+jobs:
+  packer:
+    runs-on: ubuntu-latest
+    name: packer
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Validate Base Template
+        id: validate_base
+        uses: hashicorp/packer-github-actions@master
+        with:
+          command: validate
+          arguments: -syntax-only
+          working_directory: base
+          target: base.json
+        env:
+          PACKER_LOG: 1
+        continue-on-error: true
+
+      - name: Comment
+        uses: actions/github-script@0.9.0
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Packer Validate Base🤖: *${{ steps.validate_base.outcome }}*
+
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Check Validate Status
+        if: steps.validate_base.outcome == 'failure'
+        run: exit 1
+
+      - name: Build Base Artifact
+        id: build_base
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        uses: hashicorp/packer-github-actions@master
+        with:
+          command: build
+          arguments: >-
+            -color=false
+            -on-error=cleanup
+            -var commit=${{ github.sha }}
+          working_directory: base
+          target: base.json
+        env:
+          PACKER_LOG: 1
