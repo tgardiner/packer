@@ -37,6 +37,7 @@
       "ssh_username": "ubuntu",
       "ami_name": "tgardiner/images/base-{{timestamp}}",
       "tags": {
+        "Name": "tgardiner/images/base-{{timestamp}}",
         "Commit": "{{user `commit`}}"
       }
     }
