@@ -2,7 +2,7 @@
 ##
 # tgardiner: Base AMI
 ##
-set -ex
+set -ev
 export DEBIAN_FRONTEND=noninteractive
 
 # Update and upgrade

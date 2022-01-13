@@ -1,4 +1,4 @@
-name: "Packer Base"
+name: "Packer OpenVPN"
 
 on:
   workflow_dispatch:
@@ -6,14 +6,14 @@ on:
     branches:
       - master
     paths:
-      - base/**
-      - .github/workflows/base.yml
+      - openvpn/**
+      - .github/workflows/openvpn.yml
   pull_request:
     branches:
       - master
     paths:
-      - base/**
-      - .github/workflows/base.yml
+      - openvpn/**
+      - .github/workflows/openvpn.yml
 
 jobs:
   packer:
@@ -29,14 +29,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Validate Base Template
-        id: validate_base
+      - name: Validate OpenVPN Template
+        id: validate_openvpn
         uses: hashicorp/packer-github-actions@master
         with:
           command: validate
           arguments: -syntax-only
-          working_directory: base
-          target: base.json
+          working_directory: openvpn
+          target: openvpn.json
         env:
           PACKER_LOG: 1
         continue-on-error: true
@@ -47,7 +47,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### Packer Validate Base🤖: *${{ steps.validate_base.outcome }}*
+            const output = `#### Packer Validate OpenVPN🤖: *${{ steps.validate_openvpn.outcome }}*
 
             *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
 
@@ -59,11 +59,10 @@ jobs:
             })
 
       - name: Check Validate Status
-        if: steps.validate_base.outcome == 'failure'
+        if: steps.validate_openvpn.outcome == 'failure'
         run: exit 1
 
-      - name: Build Base Artifact
-        id: build_base
+      - name: Build OpenVPN Artifact
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         uses: hashicorp/packer-github-actions@master
         with:
@@ -72,7 +71,8 @@ jobs:
             -color=false
             -on-error=cleanup
             -var commit=${{ github.sha }}
-          working_directory: base
-          target: base.json
+            -var account_id=${{ env.AWS_ACCOUNT_ID }}
+          working_directory: openvpn
+          target: openvpn.json
         env:
           PACKER_LOG: 1

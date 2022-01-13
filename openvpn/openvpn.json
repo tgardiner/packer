@@ -1,0 +1,63 @@
+{
+  "variables": {
+    "account_id": null,
+    "commit": null
+  },
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "source_ami_filter": {
+        "filters": {
+          "virtualization-type": "hvm",
+          "name": "tgardiner/images/base-*",
+          "root-device-type": "ebs"
+        },
+        "owners": ["{{user `account_id`}}"],
+        "most_recent": true
+      },
+      "launch_block_device_mappings": [
+        {
+          "delete_on_termination": true,
+          "device_name": "/dev/sda1",
+          "encrypted": true,
+          "volume_size": 25
+        }
+      ],
+      "vpc_filter": {
+        "filters": {
+          "isDefault": "false"
+          }
+      },
+      "subnet_filter": {
+        "filters": {
+          "tag:Type": "public",
+          "state": "available"
+        },
+        "most_free": true
+      },
+      "instance_type": "t2.micro",
+      "ssh_username": "ubuntu",
+      "ami_name": "tgardiner/images/openvpn-{{timestamp}}",
+      "tags": {
+        "Name": "tgardiner/images/openvpn-{{timestamp}}",
+        "Commit": "{{user `commit`}}"
+      }
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "./files/easyrsa-key.asc",
+      "destination": "/home/ubuntu/"
+    },
+    {
+      "type": "shell",
+      "inline": ["/usr/bin/cloud-init status --wait"]
+    },
+    {
+      "type": "shell",
+      "execute_command": "echo 'packer' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'",
+      "script": "./scripts/openvpn.sh"
+    }
+  ]
+}
