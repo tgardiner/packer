@@ -23,6 +23,7 @@ cat << EOF > /etc/iptables/rules.v4
 :OUTPUT ACCEPT [0:0]
 :POSTROUTING ACCEPT [0:0]
 -A POSTROUTING -s 10.8.0.0/24 -o eth+ -j MASQUERADE
+-A POSTROUTING -s 10.8.0.0/24 -o ens+ -j MASQUERADE
 COMMIT
 
 *filter
